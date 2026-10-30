@@ -33,3 +33,15 @@ Reconstrucción modular para continuar desarrollando sin seguir apilando parches
 ## Plan para la siguiente iteración
 
 Pruebas reales, correcciones de permisos y de sincronización, plantillas, vista previa y estado de votación más detallado, importación segura de datos antiguos, historial y registro de cambios.
+
+
+## V14.1 — puntos y publicación
+- **Instalación nueva**: ejecutar `database/schema.sql` (incluye V14.1).
+- **Proyecto V14 existente**: ejecutar únicamente `database/v14_1_migration.sql`. NO ejecutar schema.sql de nuevo.
+- Configura la tabla de puntos en Eventos (p. ej. `10,8,6,5,4,3,2,2,2,2`).
+- En pruebas de posiciones, el servidor calcula puntos al guardar; el campo Puntos es solo previsualización y no decide la puntuación final.
+- Los resultados de pruebas nuevas son **borradores**; pulsa Publicar resultados para mostrarlos a espectadores.
+- Si se publicó un resultado por error, vuelve a borrador, corrige y vuelve a publicar.
+- La sincronización sigue usando polling cada 2 segundos. Comprueba que administrador y espectadores apuntan al MISMO proyecto Supabase y que el evento está activado.
+- **Empates**: al publicar una prueba por posiciones, los puntos de las plazas empatadas se promedian y redondean a enteros.
+- **Limitación**: no se ha probado contra Supabase real; prueba en un proyecto de desarrollo antes de publicar.
