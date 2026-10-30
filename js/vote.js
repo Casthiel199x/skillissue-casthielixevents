@@ -1,0 +1,7 @@
+import {rpc,$,esc} from './core.js';
+let games=[];
+function fill(){const g=games.find(x=>x.id===$('game').value)||games[0];$('candidate').innerHTML=(g?.candidates||[]).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}
+async function refresh(){try{const s=await rpc('si_ballot');games=s?.games||[];$('title').textContent=s?.event?.name||'Sin evento publicado';$('ballot').classList.toggle('hidden',!games.length);const previous=$('game').value;$('game').innerHTML=games.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('');if(games.some(g=>g.id===previous))$('game').value=previous;fill();$('message').textContent=games.length?'Introduce tu código personal. No puedes votarte a ti mismo.':'No hay votaciones abiertas en este momento.'}catch(e){$('message').textContent='No se pudo consultar la votación: '+e.message}}
+$('game').onchange=fill;
+$('submit').onclick=async()=>{try{$('submit').disabled=true;const r=await rpc('si_vote',{p_game:$('game').value,p_code:$('code').value.trim(),p_candidate:$('candidate').value});const labels={OK:'¡Voto registrado! Gracias por participar.',CLOSED:'La votación ya está cerrada.',BAD_CODE:'Código incorrecto.',USED:'Este código ya ha votado.',SELF:'No puedes votarte a ti mismo.',INVALID:'Participante no válido.'};$('result').textContent=labels[r]||r;if(r==='OK')$('code').value=''}catch(e){$('result').textContent=e.message}finally{$('submit').disabled=false}};
+refresh();setInterval(refresh,5000);
