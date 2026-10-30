@@ -31,6 +31,39 @@ document.addEventListener('change',ev=>{if(ev.target.dataset.statusGame)run(asyn
 document.addEventListener('input',ev=>{if(!ev.target.matches('[data-position]'))return;const [gid]=ev.target.dataset.position.split(':');const game=state.games.find(g=>g.id===gid);if(game?.kind!=='positions')return;const input=ev.target;const position=Number(input.value);const scoring=state.event?.scoring||[10,8,6,5,4,3,2,2,2,2];const pts=Number.isInteger(position)&&position>0?(scoring[position-1]??scoring[scoring.length-1]??0):0;const cell=document.querySelector(`[data-points="${input.dataset.position}"]`);if(cell)cell.value=pts;});
 if(!configOk){$('authError').textContent='Configura primero skill_issue_config.js con las claves del nuevo Supabase.'}else if(token()){refresh().then(()=>{$('auth').classList.add('hidden');$('workspace').classList.remove('hidden')}).catch(()=>{logout();$('authError').textContent='La sesión caducó. Inicia sesión de nuevo.'})}
 
-$('finishEvent').onclick=()=>run(async()=>{if(!selected)throw Error('Selecciona un evento');if(selected!==state.active_id)throw Error('Para finalizarlo, primero pulsa Publicar / activar en este evento.');if(!confirm('¿Finalizar el evento? Se cerrarán las votaciones y se mostrará el podio. Podrás reabrirlo.'))return false;msg('Finalizando evento…');console.info('[SKILL ISSUE] Enviando finish_event',selected);await manage('finish_event',{id:selected});await refresh();if(state.event?.status!=='finished')throw Error('Supabase no confirma el estado finished; revisa la migración V14.3');msg('Evento finalizado correctamente.');return false});
-$('deleteEvent').onclick=()=>run(async()=>{if(!selected||!state.event)throw Error('Selecciona un evento');const name=state.event.name;if(!confirm('¿Eliminar DEFINITIVAMENTE el evento «'+name+'» y todos sus participantes, pruebas, resultados y votos? Esta acción no se puede deshacer.'))return;const typed=prompt('Para confirmar, escribe exactamente el nombre del evento:');if(typed===null)return false;if(typed!==name)throw Error('Eliminación cancelada: el nombre no coincide');msg('Eliminando evento…');console.info('[SKILL ISSUE] Enviando delete_event',selected);const deletedId=selected;await manage('delete_event',{id:deletedId});selected=null;await refresh();if(state.events.some(e=>e.id===deletedId))throw Error('El evento sigue en Supabase; comprueba la migración V14.3');msg('Evento eliminado correctamente.');return false});
-$('reopenEvent').onclick=()=>run(async()=>{if(!selected)throw Error('Selecciona un evento');if(!confirm('¿Reabrir este evento finalizado?'))return false;msg('Reabriendo evento…');await manage('reopen_event',{id:selected});await refresh();if(state.event?.status==='finished')throw Error('Supabase sigue mostrando el evento como finalizado');msg('Evento reabierto correctamente.');return false});
+// Event actions: delegated click listener to avoid lost handlers and disabled controls.
+const eventActions = {
+ finishEvent: async () => {
+  if(!selected) throw Error('Selecciona un evento de la lista');
+  if(!confirm('¿Finalizar el evento seleccionado?')) return false;
+  msg('Enviando solicitud para finalizar…');
+  await manage('finish_event',{id:selected});
+  await refresh();
+  if(state.events.find(e=>e.id===selected)?.status!=='finished') throw Error('Supabase no ha confirmado el cierre del evento');
+  msg('Evento FINALIZADO correctamente');return false;
+ },
+ reopenEvent: async () => {
+  if(!selected) throw Error('Selecciona un evento');
+  if(!confirm('¿Reabrir este evento?')) return false;
+  msg('Reabriendo evento…');await manage('reopen_event',{id:selected});await refresh();
+  if(state.events.find(e=>e.id===selected)?.status==='finished') throw Error('Supabase no ha confirmado la reapertura');
+  msg('Evento reabierto correctamente');return false;
+ },
+ deleteEvent: async () => {
+  if(!selected||!state.event) throw Error('Selecciona un evento');
+  const name=state.event.name;
+  if(!confirm(`¿Eliminar DEFINITIVAMENTE «${name}» y todos sus datos?`))return false;
+  const typed=prompt('Escribe exactamente el nombre del evento para confirmar:');
+  if(typed===null)return false;
+  if(typed!==name)throw Error('El nombre no coincide; no se ha eliminado nada');
+  msg('Eliminando evento…');const id=selected;
+  await manage('delete_event',{id});selected=null;await refresh();
+  if(state.events.some(e=>e.id===id))throw Error('Supabase no ha confirmado la eliminación');
+  msg('Evento eliminado correctamente');return false;
+ }
+};
+for(const id of Object.keys(eventActions)){
+ const button=$(id);
+ button.disabled=false;
+ button.addEventListener('click',()=>{console.info('[SKILL ISSUE] clic',id,selected);msg('Procesando '+button.textContent+'…');run(eventActions[id]);});
+}
