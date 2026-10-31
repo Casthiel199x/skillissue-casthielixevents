@@ -22,4 +22,26 @@ refresh();setInterval(refresh,2000);setInterval(tick,150);
 $('shareResults').onclick=async()=>{if(!state?.event)return;const text=['🏆 '+state.event.name,'Clasificación general',...points(state).map((p,i)=>`${i+1}. ${p.name} — ${p.points} pts`)].join('\n');try{await navigator.clipboard.writeText(text);$('shareResults').textContent='¡Copiado!';setTimeout(()=>$('shareResults').textContent='Copiar para Discord',2000)}catch(e){$('liveStatus').textContent='No se pudo copiar: '+e.message}};
 
 $('closePublicProfile').onclick=()=>$('profileDialog').close();
-$('ranking').addEventListener('click',ev=>{const b=ev.target.closest('[data-public-profile]');if(!b)return;const p=(state?.players||[]).find(x=>x.id===b.dataset.publicProfile);if(!p)return;const pr=profiles.find(x=>x.player_id===p.id)||{};const ranked=points(state);const pos=ranked.findIndex(x=>x.id===p.id)+1;const portrait=pr.portrait_url||pr.avatar_url;const validImage=portrait&&/^https:\/\/(img2?\.finalfantasyxiv\.com)\//.test(portrait);const url=pr.lodestone_url&&/^https:\/\/eu\.finalfantasyxiv\.com\/lodestone\/character\/\d+\/$/.test(pr.lodestone_url)?pr.lodestone_url:null;$('publicProfileContent').innerHTML=`<div class="profile-head">${validImage?`<img src="${esc(portrait)}" alt="Retrato del personaje" loading="lazy">`:'<div class="profile-placeholder">✦</div>'}<div><p class="muted small">SKILL ISSUE · PLAYER PROFILE</p><h2>${esc(pr.character_name||p.name)}</h2><p>${esc([pr.world,pr.data_center].filter(Boolean).join(' · ')||'Personaje sin vincular')}</p><p class="muted">${esc([pr.race,pr.main_job].filter(Boolean).join(' · '))}</p></div></div><div class="profile-stats"><div><strong>${pos}º</strong><span>Clasificación</span></div><div><strong>${ranked[pos-1]?.points||0}</strong><span>Puntos</span></div><div><strong>${pr.events||0}</strong><span>Eventos</span></div><div><strong>${pr.wins||0}</strong><span>Victorias en pruebas</span></div><div><strong>${pr.podiums||0}</strong><span>Podios en pruebas</span></div></div>${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="vote-btn">Ver en Lodestone</a>`:''}<p class="muted small">Datos públicos importados o añadidos por la organización. Perfil no verificado.</p>`;$('profileDialog').showModal();});
+$('ranking').addEventListener('click',ev=>{
+ const b=ev.target.closest('[data-public-profile]');if(!b)return;
+ const p=(state?.players||[]).find(x=>x.id===b.dataset.publicProfile);if(!p)return;
+ const pr=profiles.find(x=>x.player_id===p.id)||{};
+ const ranked=points(state),pos=ranked.findIndex(x=>x.id===p.id)+1;
+ const portrait=pr.portrait_url||pr.avatar_url;
+ const validImage=portrait&&/^https:\/\/(?:img2?\.finalfantasyxiv\.com)\//.test(portrait);
+ const url=pr.lodestone_url&&/^https:\/\/eu\.finalfantasyxiv\.com\/lodestone\/character\/\d+\/$/.test(pr.lodestone_url)?pr.lodestone_url:null;
+ const pts=ranked[pos-1]?.points||0;
+ const rankLabel=pos===1?'LÍDER DEL EVENTO':pos===2?'SUBCAMPEÓN':pos===3?'TERCER PUESTO':'AVENTURERO';
+ const rankClass=pos===1?'is-champion':pos<=3?'is-podium':'';
+ const job=pr.main_job||'Job no indicado';
+ const realm=[pr.world,pr.data_center].filter(Boolean).join(' · ')||'Mundo por descubrir';
+ $('publicProfileContent').innerHTML=`<article class="si-adventurer ${rankClass}">
+  <div class="si-plate-top"><span>✦ &nbsp; SKILL ISSUE <em>EVENT SERIES</em></span><span class="si-plate-number">ADVENTURER FILE / ${String(pos).padStart(2,'0')}</span></div>
+  <div class="si-plate-main"><div class="si-portrait-wrap"><div class="si-portrait">${validImage?`<img src="${esc(portrait)}" alt="Retrato de ${esc(pr.character_name||p.name)}" loading="lazy" referrerpolicy="no-referrer">`:'<div class="si-portrait-empty"><span>✦</span><small>RETRATO NO DISPONIBLE</small></div>'}</div><div class="si-portrait-label">✧ ADVENTURER PLATE ✧</div></div>
+  <div class="si-identity"><span class="si-eyebrow">THE WARRIOR OF SKILL ISSUE</span><h2>${esc(pr.character_name||p.name)}</h2><div class="si-rank-title">✦ ${rankLabel} ✦</div><div class="si-rule"></div><div class="si-field"><span>WORLD / DATA CENTER</span><strong>${esc(realm)}</strong></div><div class="si-field"><span>MAIN JOB</span><strong>${esc(job)}</strong></div><div class="si-field"><span>RACE</span><strong>${esc(pr.race||'No indicada')}</strong></div><div class="si-emblem"><img src="assets/moogle-emblem.webp" alt="Emblema SKILL ISSUE"><span>SKILL ISSUE<br><small>RAIDERS & FRIENDS</small></span></div></div></div>
+  <div class="si-section-title"><span>✧</span> BATTLE RECORD <span>✧</span></div>
+  <div class="si-plate-stats"><div class="si-primary-stat"><strong>${pos}º</strong><span>CLASIFICACIÓN</span></div><div class="si-primary-stat"><strong>${pts}</strong><span>PUNTOS</span></div><div><strong>${pr.events||0}</strong><span>EVENTOS</span></div><div><strong>${pr.wins||0}</strong><span>VICTORIAS</span></div><div><strong>${pr.podiums||0}</strong><span>PODIOS</span></div></div>
+  <div class="si-plate-footer"><span>✦ &nbsp; FORGED IN CHAOS. UNITED BY SKILL ISSUE.</span>${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="si-lodestone-link">VER EN LODESTONE ↗</a>`:''}</div>
+  <p class="si-disclaimer">Datos públicos facilitados por la organización · Perfil no verificado</p></article>`;
+ $('profileDialog').showModal();
+});
