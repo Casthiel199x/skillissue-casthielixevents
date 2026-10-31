@@ -1,0 +1,1 @@
+SKILL ISSUE V15.3 — rediseño real de ficha pública. Subir a GitHub Pages todas las carpetas y archivos, conservando el skill_issue_config.js actual. No requiere SQL ni cambios en Supabase. En la página de espectadores, pulsar un participante. Cache busting v1531.
